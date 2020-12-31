@@ -49,7 +49,7 @@ steps:
 
 trigger:
   branch:
-    - master
+    - main
 ---
 kind: pipeline
 type: kubernetes

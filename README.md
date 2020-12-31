@@ -195,7 +195,7 @@ steps:
 
 trigger:
   branch:
-    - master
+    - main
 ---
 kind: pipeline
 type: kubernetes
@@ -248,7 +248,7 @@ steps:
 
 trigger:
   branch:
-    - master
+    - main
 ```
 
 ![](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/189847076563479fb7f449fa9f218c06~tplv-k3u1fbpfcp-watermark.image)
