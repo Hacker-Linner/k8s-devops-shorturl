@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shorturl-api
+data:
+  shorturl-api.yaml: |-
+    Name: shorturl-api
+    Host: 0.0.0.0
+    Port: 8888
+    Transform:
+      Etcd:
+        Hosts:
+          - your-ip:2379
+        Key: transform.rpc

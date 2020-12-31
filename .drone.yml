@@ -1,0 +1,105 @@
+kind: pipeline
+type: kubernetes
+name: ShortUrl(transform.rpc)
+
+steps:
+
+  - name: 更新 Charts(transform.rpc)
+    image: busybox
+    commands:
+      - echo $DRONE_COMMIT
+      - '[ -n "$DRONE_COMMIT" ] && (
+          sed -i "s/APP_VERSION/${DRONE_COMMIT}/g" k8s-devops/helm-shorturl/shorturl/Chart.yaml;
+          sed -i "s/SHORTURL/shorturl-transform-rpc/g" k8s-devops/helm-shorturl/shorturl/Chart.yaml;
+          sed -i "s/IMAGE/shorturl-transform-rpc/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/APICONFIGMAP//g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/RPCCONFIGMAP/shorturl-transform-rpc/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/CONTAINERPORT/8081/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/INGRESS/false/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/8080/8081/g" k8s-devops/helm-shorturl/shorturl/templates/NOTES.txt;
+        )'
+      - cat k8s-devops/helm-shorturl/shorturl/Chart.yaml
+      - cat k8s-devops/helm-shorturl/shorturl/values.yaml
+
+  - name: 构建 transform.rpc Image
+    image: plugins/docker
+    settings:
+      debug: true
+      dockerfile: Dockerfile.prod.rpc
+      repo: hub.your-domain.com/library/shorturl-transform-rpc
+      tags: ${DRONE_COMMIT}
+      registry: hub.your-domain.com
+      username:
+        from_secret: docker_user
+      password:
+        from_secret: docker_pass
+
+  - name: 上云 HelmV3(transform.rpc) -> K8S
+    image: pelotech/drone-helm3
+    settings:
+      helm_command: upgrade
+      chart: ./k8s-devops/helm-shorturl/shorturl
+      release: shorturl-transform-rpc
+      namespace: shorturl
+      api_server:
+        from_secret: api_server
+      kubernetes_token:
+        from_secret: k8s_token
+      skip_tls_verify: true
+
+trigger:
+  branch:
+    - master
+---
+kind: pipeline
+type: kubernetes
+name: ShortUrl(shorturl-api)
+
+steps:
+
+  - name: 更新 Charts(shorturl-api)
+    image: busybox
+    commands:
+      - echo $DRONE_COMMIT
+      - '[ -n "$DRONE_COMMIT" ] && (
+          sed -i "s/APP_VERSION/${DRONE_COMMIT}/g" k8s-devops/helm-shorturl/shorturl/Chart.yaml;
+          sed -i "s/SHORTURL/shorturl-api/g" k8s-devops/helm-shorturl/shorturl/Chart.yaml;
+          sed -i "s/IMAGE/shorturl-api/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/APICONFIGMAP/shorturl-api/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/RPCCONFIGMAP//g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/CONTAINERPORT/8888/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/INGRESS/true/g" k8s-devops/helm-shorturl/shorturl/values.yaml;
+          sed -i "s/8080/8888/g" k8s-devops/helm-shorturl/shorturl/templates/NOTES.txt;
+        )'
+      - cat k8s-devops/helm-shorturl/shorturl/Chart.yaml
+      - cat k8s-devops/helm-shorturl/shorturl/values.yaml
+
+  - name: 构建 shorturl-api Image
+    image: plugins/docker
+    settings:
+      debug: true
+      dockerfile: Dockerfile.prod.api
+      repo: hub.your-domain.com/library/shorturl-api
+      tags: ${DRONE_COMMIT}
+      registry: hub.your-domain.com
+      username:
+        from_secret: docker_user
+      password:
+        from_secret: docker_pass
+
+  - name: 上云 HelmV3(shorturl-api) -> K8S
+    image: pelotech/drone-helm3
+    settings:
+      helm_command: upgrade
+      chart: ./k8s-devops/helm-shorturl/shorturl
+      release: shorturl-api
+      namespace: shorturl
+      api_server:
+        from_secret: api_server
+      kubernetes_token:
+        from_secret: k8s_token
+      skip_tls_verify: true
+
+trigger:
+  branch:
+    - master

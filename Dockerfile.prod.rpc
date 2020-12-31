@@ -1,0 +1,19 @@
+### shorturl:base
+FROM hub.your-domain.com/library/shorturl:base as builder
+
+WORKDIR /shorturl-rpc
+COPY . .
+RUN CGO_ENABLED=0 go build -a -o bin/shorturl-rpc rpc/transform/*.go
+
+### shorturl-alpine:base
+FROM hub.your-domain.com/library/shorturl-alpine:base
+
+LABEL maintainer="为少"
+WORKDIR /home/app
+COPY --from=builder /shorturl-rpc/bin/shorturl-rpc .
+COPY ./rpc/transform/etc ./rpc/transform/etc
+RUN chown -R app:app ./
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
+USER app
+CMD ["./shorturl-rpc", "-f", "rpc/transform/etc/transform.yaml"]

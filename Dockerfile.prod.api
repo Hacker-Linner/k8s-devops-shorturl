@@ -1,0 +1,19 @@
+### shorturl:base
+FROM hub.your-domain.com/library/shorturl:base as builder
+
+WORKDIR /shorturl-api
+COPY . .
+RUN CGO_ENABLED=0 go build -a -o bin/shorturl-api api/*.go
+
+### shorturl-alpine:base
+FROM hub.your-domain.com/library/shorturl-alpine:base
+
+LABEL maintainer="为少"
+WORKDIR /home/app
+COPY --from=builder /shorturl-api/bin/shorturl-api .
+COPY ./api/etc ./api/etc
+RUN chown -R app:app ./
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
+USER app
+CMD ["./shorturl-api", "-f", "api/etc/shorturl-api.yaml"]

@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shorturl.fullname" . }}
+  labels:
+    {{- include "shorturl.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shorturl.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shorturl.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "shorturl.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.containerPort }}
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          {{- if .Values.apiConfigMap }}
+          volumeMounts:
+            - name: config
+              mountPath: /home/app/configs
+          {{- end }}
+          {{- if .Values.rpcConfigMap }}
+          volumeMounts:
+            - name: config
+              mountPath: /home/app/configs
+          {{- end }}
+          volumeMounts:
+            - name: timezone
+              mountPath: /etc/localtime
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.apiConfigMap }}
+      volumes:
+        - name: config      
+          configMap:
+            name: {{ .Values.apiConfigMap }}
+      {{- end }}
+      {{- if .Values.rpcConfigMap }}
+      volumes:
+        - name: config      
+          configMap:
+            name: {{ .Values.rpcConfigMap }}
+      {{- end }}
+      volumes:
+        - name: timezone
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

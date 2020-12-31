@@ -1,0 +1,6 @@
+FROM alpine:3.12
+
+RUN addgroup -S app \
+    && adduser -S -g app app \
+    && apk --no-cache add \
+    ca-certificates curl netcat-openbsd

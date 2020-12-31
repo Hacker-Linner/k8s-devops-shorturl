@@ -1,0 +1,9 @@
+FROM golang:1.15-alpine
+
+RUN go env -w GO111MODULE=on
+RUN go env -w GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+RUN mkdir -p /shorturl/
+
+WORKDIR /shorturl
+COPY go.mod go.mod
+RUN go mod download
