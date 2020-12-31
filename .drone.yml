@@ -102,4 +102,4 @@ steps:
 
 trigger:
   branch:
-    - master
+    - main
